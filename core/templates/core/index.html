@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Analyzer & Job Finder - AI-Powered Career Platform</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+  <nav class="nav">
+    <div class="container nav-container">
+      <a href="{% url 'index' %}" class="nav-logo">ResumeAI</a>
+      <ul class="nav-links">
+        <li><a href="{% url 'index' %}" class="nav-link active">Home</a></li>
+        {% if user.is_authenticated %}
+        <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
+        <li><a href="{% url 'upload_page' %}" class="nav-link">Upload Resume</a></li>
+        <li><a href="{% url 'jobs' %}" class="nav-link">Find Jobs</a></li>
+        <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+        <li><a href="{% url 'logout' %}" class="btn btn-sm btn-outline">Logout</a></li>
+        {% else %}
+        <li><a href="{% url 'login' %}" class="nav-link">Login</a></li>
+        <li><a href="{% url 'register' %}" class="btn btn-primary btn-sm">Sign Up</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero Section -->
+    <section
+      style="padding: var(--spacing-3xl) 0; background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);">
+      <div class="container">
+        <div style="max-width: 800px; margin: 0 auto; text-align: center;">
+          <h1 style="margin-bottom: var(--spacing-lg); font-size: var(--font-size-4xl);">
+            Optimize Your Resume, Land Your Dream Job
+          </h1>
+          <p style="font-size: var(--font-size-xl); color: var(--text-secondary); margin-bottom: var(--spacing-xl);">
+            AI-powered resume analysis and intelligent job matching to accelerate your career journey
+          </p>
+          <div style="display: flex; gap: var(--spacing-md); justify-content: center; flex-wrap: wrap;">
+            {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg">Go to Dashboard</a>
+            {% else %}
+            <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Get Started</a>
+            <a href="{% url 'login' %}" class="btn btn-outline btn-lg">Login</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section style="padding: var(--spacing-3xl) 0;">
+      <div class="container">
+        <h2 style="text-align: center; margin-bottom: var(--spacing-2xl);">Powerful Features</h2>
+        <div class="grid grid-3">
+          <div class="card">
+            <h3>ATS Score Analysis</h3>
+            <p>Get instant feedback on how well your resume performs with Applicant Tracking Systems. Identify areas for
+              improvement and optimize your chances of passing automated screenings.</p>
+          </div>
+          <div class="card">
+            <h3>Keyword Optimization</h3>
+            <p>Discover missing keywords and phrases that recruiters are looking for. Enhance your resume with
+              industry-relevant terms to increase visibility and match rates.</p>
+          </div>
+          <div class="card">
+            <h3>Smart Job Matching</h3>
+            <p>Receive personalized job recommendations based on your resume, skills, and career preferences. See match
+              percentages and find opportunities that align with your goals.</p>
+          </div>
+          <div class="card">
+            <h3>Strengths & Weaknesses</h3>
+            <p>Understand what makes your resume stand out and identify areas that need attention. Get actionable
+              insights to strengthen your professional profile.</p>
+          </div>
+          <div class="card">
+            <h3>Professional Summary</h3>
+            <p>Generate an optimized professional summary that highlights your key achievements and value proposition.
+              Make a strong first impression with recruiters.</p>
+          </div>
+          <div class="card">
+            <h3>Career Preferences</h3>
+            <p>Set your job preferences including location, salary range, remote options, and experience level. Get
+              tailored recommendations that match your criteria.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section style="padding: var(--spacing-3xl) 0; background-color: var(--bg-secondary);">
+      <div class="container">
+        <h2 style="text-align: center; margin-bottom: var(--spacing-2xl);">How It Works</h2>
+        <div class="grid grid-3" style="max-width: 1000px; margin: 0 auto;">
+          <div style="text-align: center;">
+            <div
+              style="width: 60px; height: 60px; border-radius: 50%; background-color: var(--accent-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--spacing-md); font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);">
+              1</div>
+            <h3>Upload Your Resume</h3>
+            <p>Upload your resume in PDF, DOC, or DOCX format. Our system securely processes your document.</p>
+          </div>
+          <div style="text-align: center;">
+            <div
+              style="width: 60px; height: 60px; border-radius: 50%; background-color: var(--accent-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--spacing-md); font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);">
+              2</div>
+            <h3>Set Preferences</h3>
+            <p>Tell us about your career goals, preferred job titles, locations, and salary expectations.</p>
+          </div>
+          <div style="text-align: center;">
+            <div
+              style="width: 60px; height: 60px; border-radius: 50%; background-color: var(--accent-primary); display: flex; align-items: center; justify-content: center; margin: 0 auto var(--spacing-md); font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold);">
+              3</div>
+            <h3>Get Insights & Jobs</h3>
+            <p>Receive detailed analysis and personalized job recommendations with match scores.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section style="padding: var(--spacing-3xl) 0;">
+      <div class="container">
+        <div class="card" style="text-align: center; max-width: 700px; margin: 0 auto;">
+          <h2 style="margin-bottom: var(--spacing-md);">Ready to Transform Your Career?</h2>
+          <p style="margin-bottom: var(--spacing-xl); color: var(--text-secondary);">
+            Join thousands of professionals who have optimized their resumes and found their dream jobs
+          </p>
+          <a href="{% url 'upload_page' %}" class="btn btn-primary btn-lg">Start Analyzing Your Resume</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer
+    style="padding: var(--spacing-xl) 0; border-top: 1px solid var(--border-color); margin-top: var(--spacing-3xl);">
+    <div class="container" style="text-align: center; color: var(--text-tertiary);">
+      <p>&copy; 2026 ResumeAI. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/state.js' %}"></script>
+  <script src="{% static 'js/utils.js' %}"></script>
+</body>
+
+</html>

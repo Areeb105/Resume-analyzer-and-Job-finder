@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career Preferences - Resume Analyzer & Job Finder</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+  <nav class="nav">
+    <div class="container nav-container">
+      <a href="{% url 'index' %}" class="nav-logo">ResumeAI</a>
+      <ul class="nav-links">
+        <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
+        <li><a href="{% url 'upload_page' %}" class="nav-link">Upload Resume</a></li>
+        <li><a href="{% url 'jobs' %}" class="nav-link">Find Jobs</a></li>
+        <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+        <li><a href="{% url 'logout' %}" class="btn btn-sm btn-outline">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main style="padding: var(--spacing-xl) 0;">
+    <div class="container container-narrow">
+      <h1 style="margin-bottom: var(--spacing-lg);">Career Preferences</h1>
+      <p style="color: var(--text-secondary); margin-bottom: var(--spacing-xl);">
+        Tell us about your career goals and preferences to get personalized job recommendations.
+      </p>
+
+      <form id="preferences-form" class="card">
+        <!-- Job Title -->
+        <div class="form-group">
+          <label class="form-label" for="job-title">Desired Job Title *</label>
+          <input type="text" id="job-title" class="form-input" placeholder="e.g., Software Engineer, Product Manager"
+            required>
+          <div class="form-help">Enter the job title you're looking for</div>
+        </div>
+
+        <!-- Location -->
+        <div class="form-group">
+          <label class="form-label" for="location">Preferred Location</label>
+          <input type="text" id="location" class="form-input" placeholder="e.g., San Francisco, CA or Remote">
+          <div class="form-help">City, State, or "Remote"</div>
+        </div>
+
+        <!-- Remote Work -->
+        <div class="form-group">
+          <label class="form-label">Remote Work Preference</label>
+          <div class="radio-group">
+            <div class="radio-item">
+              <input type="radio" id="remote-any" name="remote" value="any">
+              <label for="remote-any">Any (Remote, Hybrid, or On-site)</label>
+            </div>
+            <div class="radio-item">
+              <input type="radio" id="remote-only" name="remote" value="remote">
+              <label for="remote-only">Remote Only</label>
+            </div>
+            <div class="radio-item">
+              <input type="radio" id="remote-no" name="remote" value="no">
+              <label for="remote-no">On-site Only</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Salary Range -->
+        <div class="form-group">
+          <label class="form-label" for="salary-range">Expected Salary Range</label>
+          <select id="salary-range" class="form-select">
+            <option value="">Select range</option>
+            <option value="0-50000">$0 - $50,000</option>
+            <option value="50000-75000">$50,000 - $75,000</option>
+            <option value="75000-100000">$75,000 - $100,000</option>
+            <option value="100000-125000">$100,000 - $125,000</option>
+            <option value="125000-150000">$125,000 - $150,000</option>
+            <option value="150000-200000">$150,000 - $200,000</option>
+            <option value="200000+">$200,000+</option>
+          </select>
+        </div>
+
+        <!-- Experience Level -->
+        <div class="form-group">
+          <label class="form-label" for="experience-level">Experience Level</label>
+          <select id="experience-level" class="form-select">
+            <option value="">Select level</option>
+            <option value="entry">Entry Level (0-2 years)</option>
+            <option value="mid">Mid Level (3-5 years)</option>
+            <option value="senior">Senior Level (6-10 years)</option>
+            <option value="executive">Executive (10+ years)</option>
+          </select>
+        </div>
+
+        <!-- Industries -->
+        <div class="form-group">
+          <label class="form-label">Industries of Interest</label>
+          <div class="checkbox-group">
+            <div class="checkbox-item">
+              <input type="checkbox" id="industry-tech" value="Technology">
+              <label for="industry-tech">Technology</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="industry-finance" value="Finance">
+              <label for="industry-finance">Finance</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="industry-healthcare" value="Healthcare">
+              <label for="industry-healthcare">Healthcare</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="industry-education" value="Education">
+              <label for="industry-education">Education</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="industry-retail" value="Retail">
+              <label for="industry-retail">Retail</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="industry-manufacturing" value="Manufacturing">
+              <label for="industry-manufacturing">Manufacturing</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="industry-consulting" value="Consulting">
+              <label for="industry-consulting">Consulting</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="industry-other" value="Other">
+              <label for="industry-other">Other</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="form-group">
+          <label class="form-label" for="skills">Key Skills</label>
+          <textarea id="skills" class="form-textarea"
+            placeholder="Enter your key skills separated by commas (e.g., JavaScript, Python, React, Project Management)"></textarea>
+          <div class="form-help">Separate skills with commas</div>
+        </div>
+
+        <!-- Form Actions -->
+        <div style="display: flex; gap: var(--spacing-md); justify-content: flex-end; margin-top: var(--spacing-xl);">
+          <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Save Preferences</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="{% static 'js/state.js' %}"></script>
+  <script src="{% static 'js/utils.js' %}"></script>
+  <script>
+    // Load existing preferences
+    function loadPreferences() {
+      const preferences = StateManager.getPreferences();
+      if (preferences) {
+        if (preferences.jobTitle) document.getElementById('job-title').value = preferences.jobTitle;
+        if (preferences.location) document.getElementById('location').value = preferences.location;
+        if (preferences.remote !== undefined) {
+          const remoteValue = preferences.remote === true ? 'remote' : preferences.remote === false ? 'no' : 'any';
+          document.querySelector(`input[name="remote"][value="${remoteValue}"]`).checked = true;
+        }
+        if (preferences.salaryRange) document.getElementById('salary-range').value = preferences.salaryRange;
+        if (preferences.experienceLevel) document.getElementById('experience-level').value = preferences.experienceLevel;
+        if (preferences.industries && preferences.industries.length > 0) {
+          preferences.industries.forEach(industry => {
+            const checkbox = document.querySelector(`input[value="${industry}"]`);
+            if (checkbox) checkbox.checked = true;
+          });
+        }
+        if (preferences.skills && preferences.skills.length > 0) {
+          document.getElementById('skills').value = preferences.skills.join(', ');
+        }
+      }
+    }
+
+    // Form submission
+    // Form submission
+    document.getElementById('preferences-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      try {
+        // Get form values
+        const jobTitle = document.getElementById('job-title').value.trim();
+        const location = document.getElementById('location').value.trim();
+        const remote = document.querySelector('input[name="remote"]:checked')?.value || 'any';
+        const salaryRange = document.getElementById('salary-range').value;
+        const experienceLevel = document.getElementById('experience-level').value;
+
+        // Get selected industries
+        const industryCheckboxes = document.querySelectorAll('input[type="checkbox"][id^="industry-"]:checked');
+        const industries = Array.from(industryCheckboxes).map(cb => cb.value);
+
+        // Get skills
+        const skillsInput = document.getElementById('skills').value.trim();
+        const skills = skillsInput ? skillsInput.split(',').map(s => s.trim()).filter(s => s) : [];
+
+        // Validate required fields
+        if (!jobTitle) {
+          Utils.showNotification('Please enter a desired job title', 'error');
+          return;
+        }
+
+        // Save preferences
+        const preferences = {
+          jobTitle,
+          location,
+          remote: remote === 'remote' ? true : remote === 'no' ? false : null,
+          salaryRange,
+          experienceLevel,
+          industries,
+          skills
+        };
+
+        StateManager.setPreferences(preferences);
+
+        // Clear cached jobs so they are re-fetched/generated with new preferences
+        StateManager.setJobs([]);
+
+        Utils.showNotification('Preferences saved successfully!', 'success');
+
+        // Redirect to analysis or jobs page
+        setTimeout(() => {
+          const resume = StateManager.getResume();
+          if (resume) {
+            window.location.href = "{% url 'analysis' %}";
+          } else {
+            window.location.href = "{% url 'upload_page' %}";
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('Error saving preferences:', error);
+        Utils.showNotification('Error saving preferences: ' + error.message, 'error');
+      }
+    });
+
+    // Initialize
+    loadPreferences();
+  </script>
+</body>
+
+</html>

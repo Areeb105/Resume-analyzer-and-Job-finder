@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - ResumeAI</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="container nav-container">
+            <a href="{% url 'index' %}" class="nav-logo">ResumeAI</a>
+        </div>
+    </nav>
+
+    <main style="padding: var(--spacing-xl) 0; display: flex; align-items: center; min-height: 80vh;">
+        <div class="container container-narrow">
+            <div class="card">
+                <h1 style="text-align: center; margin-bottom: var(--spacing-lg);">Create Account</h1>
+
+                <form id="register-form">
+                    <div class="form-group">
+                        <label class="form-label" for="username">Username</label>
+                        <input type="text" id="username" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email</label>
+                        <input type="email" id="email" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password</label>
+                        <input type="password" id="password" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="confirm-password">Confirm Password</label>
+                        <input type="password" id="confirm-password" class="form-input" required>
+                    </div>
+
+                    <div id="register-error" class="form-error"
+                        style="display: none; margin-bottom: var(--spacing-md);"></div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign Up</button>
+                </form>
+
+                <p style="text-align: center; margin-top: var(--spacing-lg); color: var(--text-secondary);">
+                    Already have an account? <a href="{% url 'login' %}" style="color: var(--primary-color);">Login</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script src="{% static 'js/state.js' %}"></script>
+    <script src="{% static 'js/auth-validation.js' %}"></script>
+    <style>
+        .requirements-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 5px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .requirements-list li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+
+        .requirements-list li.met {
+            color: var(--success-color, #28a745);
+        }
+
+        .requirements-list li.unmet {
+            color: var(--text-secondary, #666);
+        }
+
+        .requirements-list .icon {
+            margin-right: 5px;
+            font-weight: bold;
+        }
+
+        input.valid {
+            border-color: var(--success-color, #28a745) !important;
+        }
+
+        input.invalid {
+            border-color: var(--error-color, #dc3545) !important;
+        }
+    </style>
+    <script>
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorDiv = document.getElementById('register-error');
+
+            if (password !== confirmPassword) {
+                errorDiv.textContent = "Passwords do not match";
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('{% url "register" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': Utils.getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    StateManager.setUser({ name: username, email: email, isLoggedIn: true });
+                    // Clear localStorage to ensure new user starts fresh
+                    StateManager.clearAll();
+                    StateManager.init();
+                    Utils.showNotification('Registration successful!', 'success');
+                    window.location.href = "{% url 'onboarding' %}";
+                } else {
+                    errorDiv.textContent = data.error || 'Registration failed';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'An error occurred. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // Polyfill for Utils.getCookie if not already loaded fully or relies on diff scope
+        if (!Utils.getCookie) {
+            Utils.getCookie = function (name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            };
+        }
+    </script>
+</body>
+
+</html>

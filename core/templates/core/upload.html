@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Resume - Resume Analyzer & Job Finder</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+  <nav class="nav">
+    <div class="container nav-container">
+      <a href="{% url 'index' %}" class="nav-logo">ResumeAI</a>
+      <ul class="nav-links">
+        <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
+        <li><a href="{% url 'upload_page' %}" class="nav-link active">Upload Resume</a></li>
+        <li><a href="{% url 'jobs' %}" class="nav-link">Find Jobs</a></li>
+        <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+        <li><a href="{% url 'logout' %}" class="btn btn-sm btn-outline">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main style="padding: var(--spacing-xl) 0;">
+    <div class="container container-narrow">
+      <h1 style="margin-bottom: var(--spacing-lg);">Upload Your Resume</h1>
+      <p style="color: var(--text-secondary); margin-bottom: var(--spacing-xl);">
+        Upload your resume in PDF, DOC, or DOCX format. Maximum file size: 5MB.
+      </p>
+
+      <!-- Upload Area -->
+      <div class="card" style="margin-bottom: var(--spacing-xl);">
+        <div id="dropzone" class="dropzone">
+          <div class="dropzone-icon">📄</div>
+          <div class="dropzone-text">
+            <strong>Drag and drop your resume here</strong>
+          </div>
+          <div class="dropzone-hint">or click to browse files</div>
+          <input type="file" id="file-input" accept=".pdf,.doc,.docx" style="display: none;">
+        </div>
+        <div id="file-info"
+          style="display: none; margin-top: var(--spacing-lg); padding: var(--spacing-md); background-color: var(--bg-tertiary); border-radius: var(--radius-md);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-xs);" id="file-name">
+              </div>
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm);" id="file-size"></div>
+            </div>
+            <button id="remove-file" class="btn btn-sm btn-secondary">Remove</button>
+          </div>
+        </div>
+        <div id="upload-error" class="form-error" style="display: none; margin-top: var(--spacing-md);"></div>
+      </div>
+
+      <!-- Current Resume Info -->
+      <div id="current-resume" class="card" style="display: none; margin-bottom: var(--spacing-xl);">
+        <h3 style="margin-bottom: var(--spacing-md);">Current Resume</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-xs);"
+              id="current-file-name"></div>
+            <div style="color: var(--text-tertiary); font-size: var(--font-size-sm);">
+              Uploaded: <span id="current-file-date"></span>
+            </div>
+          </div>
+          <a href="{% url 'analysis' %}" class="btn btn-secondary btn-sm">View Analysis</a>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display: flex; gap: var(--spacing-md); justify-content: flex-end;">
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+        <button id="upload-btn" class="btn btn-primary" disabled>Upload Resume</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/state.js' %}"></script>
+  <script src="{% static 'js/utils.js' %}?v=2"></script>
+  <script>
+    let selectedFile = null;
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const fileInfo = document.getElementById('file-info');
+    const fileName = document.getElementById('file-name');
+    const fileSize = document.getElementById('file-size');
+    const removeFileBtn = document.getElementById('remove-file');
+    const uploadBtn = document.getElementById('upload-btn');
+    const uploadError = document.getElementById('upload-error');
+    const currentResume = document.getElementById('current-resume');
+    const currentFileName = document.getElementById('current-file-name');
+    const currentFileDate = document.getElementById('current-file-date');
+
+    // Load current resume if exists
+    function loadCurrentResume() {
+      const resume = StateManager.getResume();
+      if (resume) {
+        currentResume.style.display = 'block';
+        currentFileName.textContent = resume.fileName || 'Resume';
+        currentFileDate.textContent = Utils.formatDate(resume.uploadedAt);
+      }
+    }
+
+    // Drag and drop handlers
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('drag-over');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('drag-over');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileSelect(files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    // File selection handler
+    function handleFileSelect(file) {
+      uploadError.style.display = 'none';
+
+      // Validate file type
+      const allowedTypes = ['.pdf', '.doc', '.docx', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!Utils.validateFileType(file, allowedTypes)) {
+        showError('Invalid file type. Please upload a PDF, DOC, or DOCX file.');
+        return;
+      }
+
+      // Validate file size (5MB)
+      if (!Utils.validateFileSize(file, 5)) {
+        showError('File size exceeds 5MB limit. Please upload a smaller file.');
+        return;
+      }
+
+      selectedFile = file;
+      fileName.textContent = file.name;
+      fileSize.textContent = Utils.formatFileSize(file.size);
+      fileInfo.style.display = 'block';
+      uploadBtn.disabled = false;
+    }
+
+    // Remove file handler
+    removeFileBtn.addEventListener('click', () => {
+      selectedFile = null;
+      fileInput.value = '';
+      fileInfo.style.display = 'none';
+      uploadBtn.disabled = true;
+      uploadError.style.display = 'none';
+    });
+
+    // Upload handler
+    uploadBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Uploading...';
+      uploadError.style.display = 'none';
+
+      try {
+        const formData = new FormData();
+        formData.append('resume', selectedFile);
+
+        const response = await fetch('{% url "upload_api" %}', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': Utils.getCookie('csrftoken')
+          },
+          body: formData
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Upload failed');
+        }
+
+        const data = await response.json();
+
+        // Save resume info and ALL analysis results to resume state
+        const resumeData = {
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          fileType: selectedFile.type,
+          uploadedAt: new Date().toISOString(),
+          skills: data.skills,
+          atsScore: data.ats_score,
+          atsBreakdown: data.ats_breakdown,
+          missingKeywords: data.missing_keywords || [],
+          professionalSummary: data.professional_summary || 'No summary available'
+        };
+
+        StateManager.setResume(resumeData);
+
+        Utils.showNotification('Resume uploaded and analyzed successfully!', 'success');
+
+        // Redirect to analysis page to show results
+        window.location.href = "{% url 'analysis' %}";
+
+      } catch (error) {
+        showError(error.message || 'Failed to upload resume. Please try again.');
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload Resume';
+      }
+    });
+
+    function showError(message) {
+      uploadError.textContent = message;
+      uploadError.style.display = 'block';
+    }
+
+    // Initialize
+    loadCurrentResume();
+  </script>
+</body>
+
+</html>

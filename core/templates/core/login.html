@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ResumeAI</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="container nav-container">
+            <a href="{% url 'index' %}" class="nav-logo">ResumeAI</a>
+        </div>
+    </nav>
+
+    <main style="padding: var(--spacing-xl) 0; display: flex; align-items: center; min-height: 80vh;">
+        <div class="container container-narrow">
+            <div class="card">
+                <h1 style="text-align: center; margin-bottom: var(--spacing-lg);">Welcome Back</h1>
+
+                <form id="login-form">
+                    <div class="form-group">
+                        <label class="form-label" for="username">Username</label>
+                        <input type="text" id="username" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password</label>
+                        <input type="password" id="password" class="form-input" required>
+                    </div>
+
+                    <div id="login-error" class="form-error" style="display: none; margin-bottom: var(--spacing-md);">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                </form>
+
+                <p style="text-align: center; margin-top: var(--spacing-lg); color: var(--text-secondary);">
+                    Don't have an account? <a href="{% url 'register' %}" style="color: var(--primary-color);">Sign
+                        Up</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script src="{% static 'js/state.js' %}"></script>
+    <script src="{% static 'js/auth-validation.js' %}"></script>
+    <style>
+        .form-warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 0.5rem;
+            margin-top: 5px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-warning::before {
+            content: "⚠️";
+            margin-right: 5px;
+        }
+    </style>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('login-error');
+
+            try {
+                const response = await fetch('{% url "login" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': Utils.getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Update local state if needed (optional since we depend on session mostly now)
+                    StateManager.setUser({ name: username, isLoggedIn: true });
+                    // Clear localStorage to ensure user-specific data
+                    StateManager.clearAll();
+                    StateManager.init();
+                    Utils.showNotification('Login successful!', 'success');
+                    window.location.href = "{% url 'dashboard' %}";
+                } else {
+                    errorDiv.textContent = data.error || 'Login failed';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'An error occurred. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // Helper to get CSRF token
+        Utils.getCookie = function (name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        };
+    </script>
+</body>
+
+</html>

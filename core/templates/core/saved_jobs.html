@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Jobs - Resume Analyzer & Job Finder</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=1.1">
+</head>
+
+<body>
+    <nav class="nav">
+        <div class="container nav-container">
+            <a href="{% url 'index' %}" class="nav-logo">ResumeAI</a>
+            <ul class="nav-links">
+                <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
+                <li><a href="{% url 'upload_page' %}" class="nav-link">Upload Resume</a></li>
+                <li><a href="{% url 'jobs' %}" class="nav-link">Find Jobs</a></li>
+                <li><a href="{% url 'saved_jobs' %}" class="nav-link active">Saved Jobs</a></li>
+                <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+                <li><a href="{% url 'logout' %}" class="btn btn-sm btn-outline">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main style="padding: var(--spacing-xl) 0;">
+        <div class="container">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-xl); flex-wrap: wrap; gap: var(--spacing-md);">
+                <h1>Saved Jobs</h1>
+                <a href="{% url 'jobs' %}" class="btn btn-secondary">Browse More Jobs</a>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" style="display: none;">
+                <div class="card" style="text-align: center;">
+                    <div class="spinner"></div>
+                    <p style="margin-top: var(--spacing-lg);">Loading saved jobs...</p>
+                </div>
+            </div>
+
+            <!-- Jobs List -->
+            <div id="saved-jobs-container">
+                <div class="empty-state">
+                    <div class="empty-state-icon">💼</div>
+                    <h3 style="margin-bottom: var(--spacing-md);">No Saved Jobs</h3>
+                    <p style="margin-bottom: var(--spacing-xl);">You haven't saved any jobs yet. Browse jobs and save
+                        the ones you're interested in.</p>
+                    <a href="{% url 'jobs' %}" class="btn btn-primary">Browse Jobs</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="{% static 'js/state.js' %}"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script>
+        // Display saved jobs
+        function displaySavedJobs(jobs) {
+            const container = document.getElementById('saved-jobs-container');
+
+            if (jobs.length === 0) {
+                container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">💼</div>
+            <h3 style="margin-bottom: var(--spacing-md);">No Saved Jobs</h3>
+            <p style="margin-bottom: var(--spacing-xl);">You haven't saved any jobs yet. Browse jobs and save the ones you're interested in.</p>
+            <a href="{% url 'jobs' %}" class="btn btn-primary">Browse Jobs</a>
+          </div>
+        `;
+                return;
+            }
+
+            container.innerHTML = jobs.map(job => `
+        <div class="job-card" style="margin-bottom: var(--spacing-lg);" onclick="toggleDescription('${job.id}')">
+          <div class="job-header">
+            <div>
+              <h3 class="job-title">${job.title}</h3>
+              <div class="job-company">${job.company}</div>
+            </div>
+            <div style="text-align: right;">
+              <small style="color: var(--text-tertiary);">Saved ${Utils.formatDateRelative(job.saved_at)}</small>
+            </div>
+          </div>
+          <div class="job-details">
+            <span>📍 ${job.location || 'Not specified'}</span>
+            <span>💰 ${job.salary || 'Competitive'}</span>
+            ${job.postedDate ? `<span>📅 ${Utils.formatDateRelative(job.postedDate)}</span>` : ''}
+          </div>
+          <div class="job-description" id="desc-${job.id}">
+            ${job.description || 'No description available'}
+          </div>
+          <a class="read-more-btn" id="btn-${job.id}" onclick="event.stopPropagation(); toggleDescription('${job.id}')">Read More</a>
+          <div style="margin-top: var(--spacing-md); display: flex; gap: var(--spacing-sm);" onclick="event.stopPropagation()">
+            <button class="btn btn-primary btn-sm" onclick="applyToJob('${job.id}', '${encodeURIComponent(job.title)}', '${encodeURIComponent(job.company)}')">Apply</button>
+            ${job.redirect_url ? `<button class="btn btn-secondary btn-sm" onclick="window.open('${job.redirect_url}', '_blank')">Apply Externally</button>` : ''}
+            <button class="btn btn-outline btn-sm" onclick="unsaveJob('${job.id}')">Remove</button>
+          </div>
+        </div>
+      `).join('');
+        }
+
+        // Toggle description expanded state
+        window.toggleDescription = function (jobId) {
+            console.log("Toggling description for saved job:", jobId);
+            const descElement = document.getElementById(`desc-${jobId}`);
+            const btnElement = document.getElementById(`btn-${jobId}`);
+
+            if (descElement) {
+                const isExpanded = descElement.classList.toggle('expanded');
+                if (btnElement) {
+                    btnElement.textContent = isExpanded ? 'Read Less' : 'Read More';
+                }
+            }
+        };
+
+        // Load saved jobs from API
+        async function loadSavedJobs() {
+            document.getElementById('loading-state').style.display = 'block';
+
+            try {
+                const response = await fetch('/core/saved-jobs/');
+                const data = await response.json();
+
+                if (data.success) {
+                    displaySavedJobs(data.jobs);
+                } else {
+                    Utils.showNotification('Failed to load saved jobs', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading saved jobs:', error);
+                Utils.showNotification('An error occurred while loading saved jobs', 'error');
+            } finally {
+                document.getElementById('loading-state').style.display = 'none';
+            }
+        }
+
+        // Unsave job
+        async function unsaveJob(jobId) {
+            try {
+                const response = await fetch('/core/save-job/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        job_id: jobId,
+                        action: 'unsave'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    Utils.showNotification('Job removed from saved list', 'success');
+                    loadSavedJobs(); // Reload the list
+                } else {
+                    Utils.showNotification('Failed to remove job', 'error');
+                }
+            } catch (error) {
+                console.error('Error removing job:', error);
+                Utils.showNotification('An error occurred', 'error');
+            }
+        }
+
+        // Apply to job
+        window.applyToJob = function (jobId, title, company) {
+            window.location.href = `/application/?jobId=${jobId}&title=${title}&company=${company}`;
+        };
+
+        // Initialize
+        loadSavedJobs();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Resume Analyzer & Job Finder</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+  <nav class="nav">
+    <div class="container nav-container">
+      <a href="{% url 'index' %}" class="nav-logo">ResumeAI</a>
+      <ul class="nav-links">
+        <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
+        <li><a href="{% url 'upload_page' %}" class="nav-link">Upload Resume</a></li>
+        <li><a href="{% url 'jobs' %}" class="nav-link">Find Jobs</a></li>
+        <li><a href="{% url 'profile' %}" class="nav-link active">Profile</a></li>
+        <li><a href="{% url 'logout' %}" class="btn btn-sm btn-outline">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main style="padding: var(--spacing-xl) 0;">
+    <div class="container container-narrow">
+      <h1 style="margin-bottom: var(--spacing-xl);">Profile</h1>
+
+      <!-- User Information -->
+      <div class="card" style="margin-bottom: var(--spacing-xl);">
+        <h2 style="margin-bottom: var(--spacing-lg);">User Information</h2>
+        <form id="user-form">
+          <div class="form-group">
+            <label class="form-label" for="user-name">Full Name</label>
+            <input type="text" id="user-name" class="form-input" placeholder="Enter your full name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="user-email">Email Address</label>
+            <input type="email" id="user-email" class="form-input" placeholder="Enter your email">
+            <div class="form-help">We'll never share your email with anyone else</div>
+          </div>
+          <div style="display: flex; gap: var(--spacing-md); justify-content: flex-end; margin-top: var(--spacing-lg);">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Resume Information -->
+      <div class="card" style="margin-bottom: var(--spacing-xl);">
+        <h2 style="margin-bottom: var(--spacing-lg);">Resume Information</h2>
+        <div id="resume-info">
+          <div class="empty-state" style="padding: var(--spacing-lg);">
+            <p style="margin-bottom: var(--spacing-md);">No resume uploaded yet.</p>
+            <a href="{% url 'upload_page' %}" class="btn btn-primary">Upload Resume</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Career Preferences -->
+      <div class="card" style="margin-bottom: var(--spacing-xl);">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-lg);">
+          <h2 style="margin: 0;">Career Preferences</h2>
+          <a href="{% url 'preferences' %}" class="btn btn-secondary btn-sm">Edit Preferences</a>
+        </div>
+        <div id="preferences-display">
+          <div class="empty-state" style="padding: var(--spacing-lg);">
+            <p style="margin-bottom: var(--spacing-md);">No preferences set yet.</p>
+            <a href="{% url 'preferences' %}" class="btn btn-primary">Set Preferences</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account Statistics -->
+      <div class="card">
+        <h2 style="margin-bottom: var(--spacing-lg);">Account Statistics</h2>
+        <div id="account-stats">
+          <div class="grid grid-2" style="margin-bottom: var(--spacing-lg);">
+            <div>
+              <div
+                style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+                Member Since</div>
+              <div id="member-since" style="font-size: var(--font-size-lg); font-weight: var(--font-weight-medium);">-
+              </div>
+            </div>
+            <div>
+              <div
+                style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+                Total Analyses</div>
+              <div id="total-analyses" style="font-size: var(--font-size-lg); font-weight: var(--font-weight-medium);">0
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-2">
+            <div>
+              <div
+                style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+                Jobs Viewed</div>
+              <div id="jobs-viewed" style="font-size: var(--font-size-lg); font-weight: var(--font-weight-medium);">0
+              </div>
+            </div>
+            <div>
+              <div
+                style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+                Average ATS Score</div>
+              <div id="avg-ats-score" style="font-size: var(--font-size-lg); font-weight: var(--font-weight-medium);">
+                N/A</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/state.js' %}"></script>
+  <script src="{% static 'js/utils.js' %}"></script>
+  <script>
+    // Load user information
+    function loadUserInfo() {
+      const user = StateManager.getUser();
+      if (user) {
+        if (user.name) document.getElementById('user-name').value = user.name;
+        if (user.email) document.getElementById('user-email').value = user.email;
+      }
+    }
+
+    // Load resume information
+    function loadResumeInfo() {
+      const resume = StateManager.getResume();
+      const resumeInfo = document.getElementById('resume-info');
+
+      if (resume) {
+        resumeInfo.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--spacing-md);">
+            <div>
+              <div style="font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-xs);">${resume.fileName || 'Resume'}</div>
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm);">
+                Size: ${Utils.formatFileSize(resume.fileSize || 0)} | 
+                Uploaded: ${Utils.formatDate(resume.uploadedAt)}
+              </div>
+            </div>
+            <a href="{% url 'upload_page' %}" class="btn btn-secondary btn-sm">Replace</a>
+          </div>
+          <div style="display: flex; gap: var(--spacing-sm);">
+            <a href="{% url 'analysis' %}" class="btn btn-primary btn-sm">View Analysis</a>
+            <a href="{% url 'jobs' %}" class="btn btn-outline btn-sm">Find Jobs</a>
+          </div>
+        `;
+      }
+    }
+
+    // Load preferences display
+    function loadPreferencesDisplay() {
+      const preferences = StateManager.getPreferences();
+      const preferencesDisplay = document.getElementById('preferences-display');
+
+      if (preferences && preferences.jobTitle) {
+        const remoteText = preferences.remote === true ? 'Remote Only'
+          : preferences.remote === false ? 'On-site Only'
+            : 'Any';
+
+        preferencesDisplay.innerHTML = `
+          <div class="grid grid-2" style="gap: var(--spacing-md);">
+            <div>
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">Job Title</div>
+              <div style="font-weight: var(--font-weight-medium);">${preferences.jobTitle || 'Not set'}</div>
+            </div>
+            <div>
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">Location</div>
+              <div style="font-weight: var(--font-weight-medium);">${preferences.location || 'Not set'}</div>
+            </div>
+            <div>
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">Remote Preference</div>
+              <div style="font-weight: var(--font-weight-medium);">${remoteText}</div>
+            </div>
+            <div>
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">Experience Level</div>
+              <div style="font-weight: var(--font-weight-medium);">${preferences.experienceLevel ? preferences.experienceLevel.charAt(0).toUpperCase() + preferences.experienceLevel.slice(1) : 'Not set'}</div>
+            </div>
+            <div>
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">Salary Range</div>
+              <div style="font-weight: var(--font-weight-medium);">${preferences.salaryRange || 'Not set'}</div>
+            </div>
+            <div>
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">Industries</div>
+              <div style="font-weight: var(--font-weight-medium);">${preferences.industries && preferences.industries.length > 0 ? preferences.industries.join(', ') : 'Not set'}</div>
+            </div>
+          </div>
+          ${preferences.skills && preferences.skills.length > 0 ? `
+            <div style="margin-top: var(--spacing-md);">
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">Skills</div>
+              <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm);">
+                ${preferences.skills.map(skill => `<span class="badge badge-primary">${skill}</span>`).join('')}
+              </div>
+            </div>
+          ` : ''}
+        `;
+      }
+    }
+
+    // Load account statistics
+    function loadAccountStats() {
+      const user = StateManager.getUser();
+      const metrics = StateManager.getMetrics();
+      const jobs = StateManager.getJobs();
+
+      if (user && user.createdAt) {
+        document.getElementById('member-since').textContent = Utils.formatDate(user.createdAt);
+      }
+
+      if (metrics) {
+        document.getElementById('total-analyses').textContent = metrics.totalAnalyses || 0;
+        if (metrics.averageATSScore > 0) {
+          document.getElementById('avg-ats-score').textContent = Math.round(metrics.averageATSScore) + '%';
+        }
+      }
+
+      document.getElementById('jobs-viewed').textContent = jobs.length || 0;
+    }
+
+    // User form submission
+    document.getElementById('user-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('user-name').value.trim();
+      const email = document.getElementById('user-email').value.trim();
+
+      if (!email) {
+        Utils.showNotification('Please enter an email address', 'error');
+        return;
+      }
+
+      if (!Utils.validateEmail(email)) {
+        Utils.showNotification('Please enter a valid email address', 'error');
+        return;
+      }
+
+      StateManager.updateUser({ name, email });
+      Utils.showNotification('Profile updated successfully!', 'success');
+    });
+
+    // Initialize
+    loadUserInfo();
+    loadResumeInfo();
+    loadPreferencesDisplay();
+    loadAccountStats();
+
+    // Listen for updates
+    StateManager.on('resumeUpdated', loadResumeInfo);
+    StateManager.on('preferencesUpdated', loadPreferencesDisplay);
+    StateManager.on('metricsUpdated', loadAccountStats);
+  </script>
+</body>
+
+</html>

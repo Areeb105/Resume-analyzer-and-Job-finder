@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Analysis - Resume Analyzer & Job Finder</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+  <nav class="nav">
+    <div class="container nav-container">
+      <a href="{% url 'index' %}" class="nav-logo">ResumeAI</a>
+      <ul class="nav-links">
+        <li><a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a></li>
+        <li><a href="{% url 'upload_page' %}" class="nav-link">Upload Resume</a></li>
+        <li><a href="{% url 'jobs' %}" class="nav-link">Find Jobs</a></li>
+        <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+        <li><a href="{% url 'logout' %}" class="btn btn-sm btn-outline">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main style="padding: var(--spacing-xl) 0;">
+    <div class="container">
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-xl);">
+        <h1>Resume Analysis</h1>
+        <a href="{% url 'jobs' %}" class="btn btn-primary">View Job Recommendations</a>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading-state" style="display: none;">
+        <div class="card" style="text-align: center;">
+          <div class="spinner"></div>
+          <p style="margin-top: var(--spacing-lg);">Analyzing your resume...</p>
+        </div>
+      </div>
+
+      <!-- Analysis Content -->
+      <div id="analysis-content" style="display: none;">
+        <!-- ATS Score -->
+        <div class="card" style="margin-bottom: var(--spacing-xl); text-align: center;">
+          <h2 style="margin-bottom: var(--spacing-lg);">ATS Compatibility Score</h2>
+          <div id="ats-score-circle" class="score-circle" style="margin-bottom: var(--spacing-md);">
+            <div>
+              <div id="ats-score-value" style="font-size: var(--font-size-4xl);">0</div>
+              <div style="font-size: var(--font-size-sm); opacity: 0.8;">%</div>
+            </div>
+          </div>
+          <div id="ats-score-label"
+            style="font-size: var(--font-size-lg); font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-md);">
+          </div>
+          <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+            Your resume's compatibility with Applicant Tracking Systems. Higher scores indicate better optimization for
+            automated screening.
+          </p>
+        </div>
+
+        <div class="grid grid-2">
+          <!-- Strengths -->
+          <div class="card">
+            <h3 style="margin-bottom: var(--spacing-lg); color: var(--accent-success);">Strengths</h3>
+            <ul id="strengths-list" class="list"></ul>
+          </div>
+
+          <!-- Weaknesses -->
+          <div class="card">
+            <h3 style="margin-bottom: var(--spacing-lg); color: var(--accent-error);">Areas for Improvement</h3>
+            <ul id="weaknesses-list" class="list"></ul>
+          </div>
+        </div>
+
+        <!-- Missing Keywords -->
+        <div class="card" style="margin-top: var(--spacing-xl);">
+          <h3 style="margin-bottom: var(--spacing-lg);">Missing Keywords</h3>
+          <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+            These keywords are commonly found in job descriptions for your target role. Consider incorporating them into
+            your resume.
+          </p>
+          <div id="missing-keywords" style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm);"></div>
+        </div>
+
+        <!-- Professional Summary -->
+        <div class="card" style="margin-top: var(--spacing-xl);">
+          <h3 style="margin-bottom: var(--spacing-lg);">Professional Summary</h3>
+          <div id="professional-summary" style="color: var(--text-secondary); line-height: 1.8;"></div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display: flex; gap: var(--spacing-md); justify-content: center; margin-top: var(--spacing-xl);">
+          <a href="{% url 'upload_page' %}" class="btn btn-secondary">Upload New Resume</a>
+          <a href="{% url 'preferences' %}" class="btn btn-secondary">Update Preferences</a>
+          <a href="{% url 'jobs' %}" class="btn btn-primary">Find Matching Jobs</a>
+        </div>
+      </div>
+
+      <!-- No Resume State -->
+      <div id="no-resume-state" class="card" style="text-align: center; display: none;">
+        <div class="empty-state">
+          <div class="empty-state-icon">📄</div>
+          <h3 style="margin-bottom: var(--spacing-md);">No Resume Uploaded</h3>
+          <p style="margin-bottom: var(--spacing-xl);">Upload your resume to get started with analysis.</p>
+          <a href="{% url 'upload_page' %}" class="btn btn-primary">Upload Resume</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/state.js' %}?v=2"></script>
+  <script src="{% static 'js/utils.js' %}"></script>
+  <script>
+    // Hydrate state from server data if available
+    {% if user_profile_data and user_profile_data != 'null' %}
+    try {
+      const serverDataJSON = '{{ user_profile_data|escapejs }}';
+      const serverData = JSON.parse(serverDataJSON);
+      if (serverData) {
+        console.log("Hydrating state from server:", serverData);
+        StateManager.hydrate(serverData);
+      }
+    } catch (e) {
+      console.error("Error hydrating state:", e);
+    }
+    {% endif %}
+
+    // Load and display analysis
+    async function loadAnalysis() {
+      const resume = StateManager.getResume();
+      const preferences = StateManager.getPreferences();
+
+      // Show no resume state if no resume
+      if (!resume) {
+        document.getElementById('no-resume-state').style.display = 'block';
+        return;
+      }
+
+      // Use the analysis data from the backend (stored when resume was uploaded)
+      // The resume object contains: skills, atsScore, atsBreakdown, missingKeywords, professionalSummary
+      const analysis = {
+        atsScore: resume.atsScore || 0,
+        strengths: resume.atsBreakdown?.strengths || [],
+        weaknesses: resume.atsBreakdown?.weaknesses || [],
+        missingKeywords: resume.missingKeywords || [],
+        professionalSummary: resume.professionalSummary || 'No summary available'
+      };
+
+      // Display analysis
+      displayAnalysis(analysis);
+    }
+
+
+    function displayAnalysis(analysis) {
+      document.getElementById('analysis-content').style.display = 'block';
+
+      // ATS Score
+      const scoreCircle = document.getElementById('ats-score-circle');
+      const scoreValue = document.getElementById('ats-score-value');
+      const scoreLabel = document.getElementById('ats-score-label');
+
+      scoreValue.textContent = analysis.atsScore;
+      scoreLabel.textContent = Utils.getScoreLabel(analysis.atsScore);
+      scoreCircle.className = `score-circle ${Utils.getScoreColor(analysis.atsScore)}`;
+
+      // Strengths
+      const strengthsList = document.getElementById('strengths-list');
+      strengthsList.innerHTML = analysis.strengths.map(strength => `
+        <li class="list-item">
+          <div style="display: flex; align-items: start; gap: var(--spacing-sm);">
+            <span style="color: var(--accent-success);">✓</span>
+            <span>${strength}</span>
+          </div>
+        </li>
+      `).join('');
+
+      // Weaknesses
+      const weaknessesList = document.getElementById('weaknesses-list');
+      weaknessesList.innerHTML = analysis.weaknesses.map(weakness => `
+        <li class="list-item">
+          <div style="display: flex; align-items: start; gap: var(--spacing-sm);">
+            <span style="color: var(--accent-error);">!</span>
+            <span>${weakness}</span>
+          </div>
+        </li>
+      `).join('');
+
+      // Missing Keywords
+      const keywordsContainer = document.getElementById('missing-keywords');
+      keywordsContainer.innerHTML = analysis.missingKeywords.map(keyword => `
+        <span class="badge badge-warning">${keyword}</span>
+      `).join('');
+
+      // Professional Summary
+      document.getElementById('professional-summary').textContent = analysis.professionalSummary;
+    }
+
+    // Initialize
+    loadAnalysis();
+  </script>
+</body>
+
+</html>

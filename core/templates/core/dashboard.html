@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Resume Analyzer & Job Finder</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+  <nav class="nav">
+    <div class="container nav-container">
+      <a href="{% url 'index' %}" class="nav-logo">ResumeAI</a>
+      <ul class="nav-links">
+        <li><a href="{% url 'dashboard' %}" class="nav-link active">Dashboard</a></li>
+        <li><a href="{% url 'jobs' %}" class="nav-link">Find Jobs</a></li>
+        <li><a href="{% url 'profile' %}" class="nav-link">Profile</a></li>
+        <li><a href="{% url 'logout' %}" class="btn btn-sm btn-outline">Logout</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main style="padding: var(--spacing-xl) 0;">
+    <div class="container">
+      <h1 style="margin-bottom: var(--spacing-xl);">Dashboard</h1>
+
+      <!-- Metrics Cards -->
+      <div class="grid grid-4" style="margin-bottom: var(--spacing-xl);">
+        <div class="card">
+          <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+            Resume Status</div>
+          <div id="resume-status"
+            style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
+            Not Uploaded
+          </div>
+        </div>
+        <div class="card">
+          <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+            Last Analysis</div>
+          <div id="last-analysis"
+            style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
+            Never
+          </div>
+        </div>
+        <div class="card">
+          <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+            Current ATS Score</div>
+          <div id="avg-score"
+            style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
+            N/A
+          </div>
+        </div>
+        <div class="card">
+          <div style="color: var(--text-tertiary); font-size: var(--font-size-sm); margin-bottom: var(--spacing-xs);">
+            Jobs Found</div>
+          <div id="jobs-found"
+            style="font-size: var(--font-size-2xl); font-weight: var(--font-weight-bold); color: var(--text-primary);">
+            0
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card" style="margin-bottom: var(--spacing-xl);">
+        <h2 style="margin-bottom: var(--spacing-lg);">Quick Actions</h2>
+        <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
+          <a href="{% url 'upload_page' %}" class="btn btn-primary">Upload Resume</a>
+          <a href="{% url 'preferences' %}" class="btn btn-secondary">Update Preferences</a>
+          <a href="{% url 'analysis' %}" class="btn btn-secondary" id="view-analysis-btn" style="display: none;">View
+            Analysis</a>
+          <a href="{% url 'jobs' %}" class="btn btn-secondary">Browse Jobs</a>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="card">
+        <h2 style="margin-bottom: var(--spacing-lg);">Recent Activity</h2>
+        <div id="recent-activity">
+          <div class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <p>No activity yet. Upload your resume to get started!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="{% static 'js/state.js' %}?v=2"></script>
+  <script src="{% static 'js/utils.js' %}"></script>
+  <script>
+    // Load dashboard data
+    function loadDashboard() {
+      // Hydrate state from server data if available
+      {% if user_profile_data and user_profile_data != 'null' %}
+      try {
+        const serverDataJSON = '{{ user_profile_data|escapejs }}';
+        const serverData = JSON.parse(serverDataJSON);
+        if (serverData) {
+          console.log("Hydrating state from server:", serverData);
+          StateManager.hydrate(serverData);
+        }
+      } catch (e) {
+        console.error("Error hydrating state:", e);
+      }
+      {% endif %}
+
+      const resume = StateManager.getResume();
+      const jobs = StateManager.getJobs();
+
+      // Update metrics from resume data
+      if (resume) {
+        // Resume Status
+        document.getElementById('resume-status').textContent = 'Uploaded';
+        document.getElementById('resume-status').style.color = 'var(--accent-success)';
+
+        // Last Analysis - use upload date
+        if (resume.uploadedAt) {
+          document.getElementById('last-analysis').textContent = Utils.formatDateRelative(resume.uploadedAt);
+        }
+
+        // Current ATS Score (not average, but current score)
+        if (resume.atsScore !== undefined && resume.atsScore > 0) {
+          document.getElementById('avg-score').textContent = resume.atsScore + '%';
+          // Color based on score
+          if (resume.atsScore >= 80) {
+            document.getElementById('avg-score').style.color = 'var(--accent-success)';
+          } else if (resume.atsScore >= 60) {
+            document.getElementById('avg-score').style.color = 'var(--accent-warning)';
+          } else {
+            document.getElementById('avg-score').style.color = 'var(--accent-error)';
+          }
+        }
+
+        // Show view analysis button
+        document.getElementById('view-analysis-btn').style.display = 'inline-flex';
+      }
+
+      // Jobs Found
+      if (jobs && jobs.length > 0) {
+        document.getElementById('jobs-found').textContent = jobs.length;
+      }
+
+      // Load recent activity
+      loadRecentActivity(resume, jobs);
+    }
+
+    function loadRecentActivity(resume, jobs) {
+      const activityContainer = document.getElementById('recent-activity');
+      const activities = [];
+
+      if (resume && resume.uploadedAt) {
+        activities.push({
+          date: resume.uploadedAt,
+          type: 'upload',
+          message: 'Resume uploaded successfully'
+        });
+
+        // Add analysis activity if ATS score exists
+        if (resume.atsScore !== undefined) {
+          activities.push({
+            date: resume.uploadedAt,
+            type: 'analysis',
+            message: `Resume analyzed - ATS Score: ${resume.atsScore}%`
+          });
+        }
+      }
+
+      if (jobs && jobs.length > 0) {
+        activities.push({
+          date: new Date().toISOString(),
+          type: 'jobs',
+          message: `${jobs.length} job recommendations found`
+        });
+      }
+
+      if (activities.length === 0) {
+        return; // Keep empty state
+      }
+
+      // Sort by date (newest first)
+      activities.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // Display activities
+      activityContainer.innerHTML = '<ul class="list">' + activities.slice(0, 5).map(activity => `
+        <li class="list-item">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: var(--font-weight-medium); margin-bottom: var(--spacing-xs);">${activity.message}</div>
+              <div style="color: var(--text-tertiary); font-size: var(--font-size-sm);">${Utils.formatDateRelative(activity.date)}</div>
+            </div>
+            <span class="badge badge-primary">${activity.type}</span>
+          </div>
+        </li>
+      `).join('') + '</ul>';
+    }
+
+    // Initialize dashboard
+    loadDashboard();
+  </script>
+</body>
+
+</html>

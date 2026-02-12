@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logging Out - Resume Analyzer & Job Finder</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+
+<body>
+    <main style="padding: var(--spacing-xl) 0;">
+        <div class="container container-narrow" style="text-align: center;">
+            <div class="card">
+                <div class="spinner" style="margin: 0 auto var(--spacing-lg);"></div>
+                <h2>Logging out...</h2>
+                <p style="color: var(--text-secondary);">Please wait while we log you out.</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="{% static 'js/state.js' %}"></script>
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script>
+        // Clear all localStorage data
+        StateManager.clearAll();
+
+        // Redirect to home page after a brief delay
+        setTimeout(() => {
+            window.location.href = "{% url 'index' %}";
+        }, 500);
+    </script>
+</body>
+
+</html>
